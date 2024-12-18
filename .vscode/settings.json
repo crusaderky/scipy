@@ -1,0 +1,28 @@
+{
+    "python.testing.pytestArgs": [
+        /*
+        "scipy/_lib/tests/test__util.py",
+        "scipy/_lib/tests/test_array_api.py",
+        "scipy/cluster",
+        "scipy/constants",
+        "scipy/differentiate/tests/test_differentiate.py",
+        "scipy/fft",
+        "scipy/integrate/tests/test_cubature.py",
+        "scipy/integrate/tests/test_quadrature.py",
+        "scipy/integrate/tests/test_tanhsinh.py",
+        */
+        "scipy/ndimage",
+        /*
+        "scipy/optimize/tests/test_bracket.py",
+        "scipy/optimize/tests/test_chandrupatla.py",
+        "scipy/optimize/tests/test_optimize.py",
+        "scipy/signal/tests/test_signaltools.py",
+        "scipy/special/tests/test_logsumexp.py",
+        "scipy/special/tests/test_support_alternative_backends.py",
+        "scipy/stats",
+        */
+        "-k", "jax",
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+}

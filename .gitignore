@@ -21,7 +21,6 @@ tags
 .venv/
 venv/
 .theia/
-.vscode/
 
 # Compiled source #
 ###################
