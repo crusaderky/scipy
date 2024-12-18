@@ -194,7 +194,6 @@ class TestNdimageFilters:
         assert_array_almost_equal(output, expected)
 
     @xfail_xp_backends('cupy', reason="Differs by a factor of two?")
-    @skip_xp_backends("jax.numpy", reason="output array is read-only.")
     def test_correlate01_overlap(self, xp):
         array = xp.reshape(xp.arange(256), (16, 16))
         weights = xp.asarray([2])
@@ -536,7 +535,6 @@ class TestNdimageFilters:
                            mode='wrap', output=output)
         assert_array_almost_equal(output, expected)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only.")
     @pytest.mark.parametrize('dtype_array', types)
     @pytest.mark.parametrize('dtype_output', types)
     def test_correlate23(self, dtype_array, dtype_output, xp):
@@ -555,7 +553,6 @@ class TestNdimageFilters:
                            mode='nearest', output=output)
         assert_array_almost_equal(output, expected)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only.")
     @pytest.mark.parametrize('dtype_array', types)
     @pytest.mark.parametrize('dtype_output', types)
     def test_correlate24(self, dtype_array, dtype_output, xp):
@@ -575,7 +572,6 @@ class TestNdimageFilters:
                            mode='nearest', output=output, origin=-1)
         assert_array_almost_equal(output, tcov)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only.")
     @pytest.mark.parametrize('dtype_array', types)
     @pytest.mark.parametrize('dtype_output', types)
     def test_correlate25(self, dtype_array, dtype_output, xp):
@@ -880,7 +876,6 @@ class TestNdimageFilters:
         output2 = ndimage.gaussian_filter(input, 1.0, output=otype)
         assert_array_almost_equal(output1, output2)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only.")
     def test_gauss_memory_overlap(self, xp):
         input = xp.arange(100 * 100, dtype=xp.float32)
         input = xp.reshape(input, (100, 100))
@@ -1226,7 +1221,6 @@ class TestNdimageFilters:
         output = ndimage.prewitt(array, 0)
         assert_array_almost_equal(t, output)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only.")
     @pytest.mark.parametrize('dtype', types + complex_types)
     def test_prewitt02(self, dtype, xp):
         if is_torch(xp) and dtype in ("uint16", "uint32", "uint64"):
@@ -1288,7 +1282,6 @@ class TestNdimageFilters:
         output = ndimage.sobel(array, 0)
         assert_array_almost_equal(t, output)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only.",)
     @pytest.mark.parametrize('dtype', types + complex_types)
     def test_sobel02(self, dtype, xp):
         if is_torch(xp) and dtype in ("uint16", "uint32", "uint64"):
@@ -1348,7 +1341,6 @@ class TestNdimageFilters:
         output = ndimage.laplace(array)
         assert_array_almost_equal(tmp1 + tmp2, output)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only",)
     @pytest.mark.parametrize('dtype',
                              ["int32", "float32", "float64",
                               "complex64", "complex128"])
@@ -1378,7 +1370,6 @@ class TestNdimageFilters:
         output = ndimage.gaussian_laplace(array, 1.0)
         assert_array_almost_equal(tmp1 + tmp2, output)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only")
     @pytest.mark.parametrize('dtype',
                              ["int32", "float32", "float64",
                               "complex64", "complex128"])
@@ -1394,7 +1385,6 @@ class TestNdimageFilters:
         ndimage.gaussian_laplace(array, 1.0, output)
         assert_array_almost_equal(tmp1 + tmp2, output)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only.")
     @pytest.mark.parametrize('dtype', types + complex_types)
     def test_generic_laplace01(self, dtype, xp):
         if is_torch(xp) and dtype in ("uint16", "uint32", "uint64"):
@@ -1419,7 +1409,6 @@ class TestNdimageFilters:
         ndimage.gaussian_laplace(array, 1.0, output)
         assert_array_almost_equal(tmp, output)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only")
     @pytest.mark.parametrize('dtype',
                              ["int32", "float32", "float64",
                               "complex64", "complex128"])
@@ -1440,7 +1429,6 @@ class TestNdimageFilters:
         expected = astype(xp.sqrt(expected_float), dtype)
         xp_assert_close(output, expected, rtol=1e-6, atol=1e-6)
 
-    @skip_xp_backends("jax.numpy", reason="output array is read-only")
     @pytest.mark.parametrize('dtype',
                              ["int32", "float32", "float64",
                               "complex64", "complex128"])
@@ -1600,7 +1588,6 @@ class TestNdimageFilters:
                                               [2, 2, 1, 1, 1],
                                               [5, 3, 3, 1, 1]]), output)
 
-    @skip_xp_backends("jax.numpy", reason="assignment destination is read-only")
     def test_minimum_filter05_overlap(self, xp):
         array = xp.asarray([[3, 2, 5, 1, 4],
                             [7, 6, 9, 3, 5],
@@ -1830,9 +1817,6 @@ class TestNdimageFilters:
         xp_assert_equal(expected, output)
 
     @xfail_xp_backends("cupy", reason="cupy/cupy#8406")
-    @skip_xp_backends("jax.numpy",
-        reason="assignment destination is read-only",
-    )
     def test_rank06_overlap(self, xp):
         array = xp.asarray([[3, 2, 5, 1, 4],
                             [5, 8, 3, 7, 1],
@@ -2410,7 +2394,6 @@ def test_multiple_modes(xp):
 
 
 @skip_xp_backends("cupy", reason="https://github.com/cupy/cupy/pull/8430")
-@skip_xp_backends("jax.numpy", reason="output array is read-only.")
 def test_multiple_modes_sequentially(xp):
     # Test that the filters with multiple mode capabilities for different
     # dimensions give the same result as applying the filters with
@@ -2639,7 +2622,6 @@ def test_gaussian_radius_invalid(xp):
         ndimage.gaussian_filter1d(xp.zeros(8), sigma=1, radius=1.1)
 
 
-@skip_xp_backends("jax.numpy", reason="output array is read-only")
 class TestThreading:
     def check_func_thread(self, n, fun, args, out):
         from threading import Thread
