@@ -138,7 +138,7 @@ def whiten(obs, check_finite=True):
     std_dev = xp.std(obs, axis=0)
     zero_std_mask = std_dev == 0
     if xp.any(zero_std_mask):
-        std_dev[zero_std_mask] = 1.0
+        std_dev = xpx.at(std_dev, zero_std_mask).set(1.0, copy=None)
         warnings.warn("Some columns have standard deviation zero. "
                       "The values of these columns will not change.",
                       RuntimeWarning, stacklevel=2)
@@ -609,15 +609,16 @@ def _kpp(data, k, rng, xp):
 
     for i in range(k):
         if i == 0:
-            init[i, :] = data[rng_integers(rng, data.shape[0]), :]
-
+            data_sel = data[rng_integers(rng, data.shape[0]), :]
         else:
             D2 = cdist(init[:i,:], data, metric='sqeuclidean').min(axis=0)
             probs = D2/D2.sum()
             cumprobs = probs.cumsum()
             r = rng.uniform()
             cumprobs = np.asarray(cumprobs)
-            init[i, :] = data[np.searchsorted(cumprobs, r), :]
+            data_sel = data[np.searchsorted(cumprobs, r), :]
+
+        init = xpx.at(init)[i, :].set(data_sel, copy=None)
 
     if ndim == 1:
         init = init[:, 0]
