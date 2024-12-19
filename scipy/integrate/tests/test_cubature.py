@@ -973,10 +973,6 @@ class TestCubatureProblems:
                    f"true_error={xp.abs(res.estimate - exact)}")
         assert res.status == "converged", err_msg
 
-    @skip_xp_backends(
-        "jax.numpy",
-        reasons=["transforms make use of indexing assignment"],
-    )
     @pytest.mark.parametrize("problem", [
         (
             # Function to integrate
@@ -1123,10 +1119,6 @@ class TestCubatureProblems:
             check_0d=False,
         )
 
-    @skip_xp_backends(
-        "jax.numpy",
-        reasons=["transforms make use of indexing assignment"],
-    )
     @pytest.mark.parametrize("problem", [
         (
             # Function to integrate
@@ -1334,10 +1326,6 @@ class TestRulesCubature:
 
 
 @array_api_compatible
-@skip_xp_backends(
-    "jax.numpy",
-    reasons=["transforms make use of indexing assignment"],
-)
 class TestTransformations:
     @pytest.mark.parametrize(("a", "b", "points"), [
         (
