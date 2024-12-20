@@ -16,11 +16,9 @@ from scipy.differentiate._differentiate import _EERRORINCREASE
 pytestmark = [array_api_compatible, pytest.mark.usefixtures("skip_xp_backends")]
 
 array_api_strict_skip_reason = 'Array API does not support fancy indexing assignment.'
-jax_skip_reason = 'JAX arrays do not support item assignment.'
 
 
 @pytest.mark.skip_xp_backends('array_api_strict', reason=array_api_strict_skip_reason)
-@pytest.mark.skip_xp_backends('jax.numpy',reason=jax_skip_reason)
 class TestDerivative:
 
     def f(self, x):
@@ -476,7 +474,6 @@ class JacobianHessianTest:
 
 
 @pytest.mark.skip_xp_backends('array_api_strict', reason=array_api_strict_skip_reason)
-@pytest.mark.skip_xp_backends('jax.numpy',reason=jax_skip_reason)
 class TestJacobian(JacobianHessianTest):
     jh_func = jacobian
 
@@ -627,7 +624,6 @@ class TestJacobian(JacobianHessianTest):
 
 
 @pytest.mark.skip_xp_backends('array_api_strict', reason=array_api_strict_skip_reason)
-@pytest.mark.skip_xp_backends('jax.numpy',reason=jax_skip_reason)
 class TestHessian(JacobianHessianTest):
     jh_func = hessian
 
