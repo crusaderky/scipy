@@ -61,7 +61,7 @@ def _initialize(func, xs, args, complex_ok=False, preserve_shape=None, xp=None):
         Original shape of broadcasted arrays.
     xfat : NumPy dtype
         Result dtype of abscissae, function values, and args determined using
-        `np.result_type`, except integer types are promoted to `np.float64`.
+        `xp.result_type`, except integer types are promoted to native float.
 
     Raises
     ------
@@ -96,16 +96,17 @@ def _initialize(func, xs, args, complex_ok=False, preserve_shape=None, xp=None):
         def func(x, *args, shape=shape, func=func,  **kwargs):
             i = (0,)*(len(fshape) - len(shape))
             return func(x[i], *args, **kwargs)
+
         shape = np.broadcast_shapes(fshape, shape)  # just shapes; use of NumPy OK
         xs = [xp.broadcast_to(x, shape) for x in xs]
         args = [xp.broadcast_to(arg, shape) for arg in args]
 
-    message = ("The shape of the array returned by `func` must be the same as "
-               "the broadcasted shape of `x` and all other `args`.")
-    if preserve_shape is not None:  # only in tanhsinh for now
-        message = f"When `preserve_shape=False`, {message.lower()}"
     shapes_equal = [f.shape == shape for f in fs]
     if not all(shapes_equal):  # use Python all to reduce overhead
+        message = ("The shape of the array returned by `func` must be the same as "
+                "the broadcasted shape of `x` and all other `args`.")
+        if preserve_shape is not None:  # only in tanhsinh for now
+            message = f"When `preserve_shape=False`, {message.lower()}"
         raise ValueError(message)
 
     # These algorithms tend to mix the dtypes of the abscissae and function
