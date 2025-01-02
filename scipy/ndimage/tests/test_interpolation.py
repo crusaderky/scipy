@@ -577,7 +577,7 @@ class TestMapCoordinates:
         assert_array_almost_equal(out, xp.asarray([[0, 0], [0, 4], [0, 7]]))
         assert_array_almost_equal(out, ndimage.shift(data[:, ::2], (1, 1)))
 
-    @skip_xp_backends(np_only=True)
+    @skip_xp_backends(np_only=True, reason="endianness is numpy-specific")
     def test_map_coordinates_endianness_with_output_parameter(self, xp):
         # output parameter given as array or dtype with either endianness
         # see issue #4127

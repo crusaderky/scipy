@@ -34,6 +34,7 @@ import warnings
 import numpy as np
 import operator
 
+from scipy._lib._array_api import array_namespace
 from scipy._lib._util import normalize_axis_index
 from . import _ni_support
 from . import _nd_image
@@ -1494,8 +1495,9 @@ def _rank_filter(input, rank, size=None, footprint=None, output=None,
     if (size is not None) and (footprint is not None):
         warnings.warn("ignoring size because footprint is set",
                       UserWarning, stacklevel=3)
-    input = np.asarray(input)
-    if np.iscomplexobj(input):
+    xp = array_namespace(input)
+    input = xp.asarray(input)
+    if xp.isdtype(input.dtype, kind="complex floating"):
         raise TypeError('Complex type not supported')
     axes = _ni_support._check_axes(axes, input.ndim)
     num_axes = len(axes)
@@ -1503,9 +1505,9 @@ def _rank_filter(input, rank, size=None, footprint=None, output=None,
         if size is None:
             raise RuntimeError("no footprint or filter size provided")
         sizes = _ni_support._normalize_sequence(size, num_axes)
-        footprint = np.ones(sizes, dtype=bool)
+        footprint = xp.ones(sizes, dtype=bool)
     else:
-        footprint = np.asarray(footprint, dtype=bool)
+        footprint = xp.asarray(footprint, dtype=bool)
     # expand origins, footprint and modes if num_axes < input.ndim
     footprint = _expand_footprint(input.ndim, axes, footprint)
     origins = _expand_origin(input.ndim, axes, origin)
@@ -1520,7 +1522,7 @@ def _rank_filter(input, rank, size=None, footprint=None, output=None,
             raise ValueError('invalid origin')
     if not footprint.flags.contiguous:
         footprint = footprint.copy()
-    filter_size = np.where(footprint, 1, 0).sum()
+    filter_size = xp.where(footprint, 1, 0).sum()
     if operation == 'median':
         rank = filter_size // 2
     elif operation == 'percentile':
@@ -1545,6 +1547,8 @@ def _rank_filter(input, rank, size=None, footprint=None, output=None,
                               origins, axes=None)
     else:
         output = _ni_support._get_output(output, input)
+        # FIXME this will blindly return False for non-numpy libraries,
+        # even if they could share memory
         temp_needed = np.may_share_memory(input, output)
         if temp_needed:
             # input and output arrays cannot share memory
@@ -1556,26 +1560,26 @@ def _rank_filter(input, rank, size=None, footprint=None, output=None,
                 "filters")
         mode = _ni_support._extend_mode_to_code(mode, is_filter=True)
         if input.ndim == 1:
-            if input.dtype in (np.int64, np.float64, np.float32):
+            if input.dtype in (xp.int64, np.float64, np.float32):
                 x = input
                 x_out = output
-            elif input.dtype == np.float16:
-                x = input.astype('float32')
-                x_out = np.empty(x.shape, dtype='float32')
-            elif np.result_type(input, np.int64) == np.int64:
-                x = input.astype('int64')
-                x_out = np.empty(x.shape, dtype='int64')
+            elif input.dtype == getattr(xp, "float16", None):
+                x = input.astype(xp.float32)
+                x_out = xp.empty(x.shape, dtype=xp.float32)
+            elif xp.result_type(input, xp.int64) == xp.int64:
+                x = input.astype(xp.int64)
+                x_out = xp.empty(x.shape, dtype=xp.int64)
             elif input.dtype.kind in 'biu':
                 # cast any other boolean, integer or unsigned type to int64
-                x = input.astype('int64')
-                x_out = np.empty(x.shape, dtype='int64')
+                x = input.astype(xp.int64)
+                x_out = xp.empty(x.shape, dtype=xp.int64)
             else:
                 raise RuntimeError('Unsupported array type')
             cval = x.dtype.type(cval)
             _rank_filter_1d.rank_filter(x, rank, footprint.size, x_out, mode, cval,
                                         origin)
-            if input.dtype not in (np.int64, np.float64, np.float32):
-                np.copyto(output, x_out, casting='unsafe')
+            if input.dtype not in (xp.int64, xp.float64, xp.float32):
+                xp.copyto(output, x_out, casting='unsafe')
         else:
             _nd_image.rank_filter(input, rank, footprint, output, mode, cval, origins)
         if temp_needed:
