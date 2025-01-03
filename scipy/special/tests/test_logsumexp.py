@@ -5,7 +5,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 from scipy.conftest import array_api_compatible
-from scipy._lib._array_api import array_namespace, is_array_api_strict
+from scipy._lib._array_api import array_namespace, is_array_api_strict, is_jax
 from scipy._lib._array_api_no_0d import (xp_assert_equal, xp_assert_close,
                                          xp_assert_less)
 
@@ -18,9 +18,6 @@ integral_dtypes = ['int32', 'int64']
 
 
 @array_api_compatible
-@pytest.mark.usefixtures("skip_xp_backends")
-@pytest.mark.skip_xp_backends('jax.numpy',
-                              reason="JAX arrays do not support item assignment")
 def test_wrap_radians(xp):
     x = xp.asarray([-math.pi-1, -math.pi, -1, -1e-300,
                     0, 1e-300, 1, math.pi, math.pi+1])
@@ -31,9 +28,6 @@ def test_wrap_radians(xp):
 
 
 @array_api_compatible
-@pytest.mark.usefixtures("skip_xp_backends")
-@pytest.mark.skip_xp_backends('jax.numpy',
-                              reason="JAX arrays do not support item assignment")
 class TestLogSumExp:
     def test_logsumexp(self, xp):
         # Test with zero-size array
@@ -170,12 +164,13 @@ class TestLogSumExp:
         logsumexp(a, b=b)
 
     @pytest.mark.parametrize('arg', (1, [1, 2, 3]))
-    @pytest.mark.skip_xp_backends(np_only=True)
+    @pytest.mark.skip_xp_backends(np_only=True, reason="pure Python")
+    @pytest.mark.usefixtures("skip_xp_backends")
     def test_xp_invalid_input(self, arg, xp):
         assert logsumexp(arg) == logsumexp(np.asarray(np.atleast_1d(arg)))
 
-    @pytest.mark.skip_xp_backends(np_only=True,
-                                  reason="Lists correspond with NumPy backend")
+    @pytest.mark.skip_xp_backends(np_only=True, reason="pure Python")
+    @pytest.mark.usefixtures("skip_xp_backends")
     def test_list(self, xp):
         a = [1000, 1000]
         desired = xp.asarray(1000.0 + math.log(2.0), dtype=np.float64)
@@ -199,15 +194,21 @@ class TestLogSumExp:
         a = xp.asarray([2, 1], dtype=xp_dtype_a)
         b = xp.asarray([1, -1], dtype=xp_dtype_b)
         xp_test = array_namespace(a, b)  # torch needs compatible result_type
+
+        xp_float_dtypes = [dtype for dtype in [xp_dtype_a, xp_dtype_b]
+                            if not xp_test.isdtype(dtype, 'integral')]
         if is_array_api_strict(xp):
-            xp_float_dtypes = [dtype for dtype in [xp_dtype_a, xp_dtype_b]
-                               if not xp_test.isdtype(dtype, 'integral')]
             if len(xp_float_dtypes) < 2:  # at least one is integral
                 xp_float_dtypes.append(xp.asarray(1.).dtype)
             desired_dtype = xp_test.result_type(*xp_float_dtypes)
+        elif is_jax(xp):
+            if not xp_float_dtypes:  # all are integral
+                xp_float_dtypes.append(xp.asarray(1.).dtype)
+            desired_dtype = xp_test.result_type(*xp_float_dtypes)
         else:
-            # True for all libraries tested
+            # True for all other libraries tested
             desired_dtype = xp_test.result_type(xp_dtype_a, xp_dtype_b, xp.float32)
+
         desired = xp.asarray(math.log(math.exp(2) - math.exp(1)), dtype=desired_dtype)
         xp_assert_close(logsumexp(a, b=b), desired)
 
