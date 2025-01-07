@@ -45,9 +45,6 @@ def _vectorize(xp):
 @pytest.mark.skip_xp_backends(
     'array_api_strict', reason='Currently uses fancy indexing assignment.'
 )
-@pytest.mark.skip_xp_backends(
-    'jax.numpy', reason='JAX arrays do not support item assignment.'
-)
 class TestTanhSinh:
 
     # Test problems from [1] Section 6
@@ -752,7 +749,6 @@ class TestTanhSinh:
 
 
 @pytest.mark.skip_xp_backends('array_api_strict', reason='No fancy indexing.')
-@pytest.mark.skip_xp_backends('jax.numpy', reason='No mutation.')
 class TestNSum:
     rng = np.random.default_rng(5895448232066142650)
     p = rng.uniform(1, 10, size=10).tolist()

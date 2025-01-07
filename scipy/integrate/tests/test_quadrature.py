@@ -276,8 +276,6 @@ class TestTrapezoid:
         # check integral of normal equals 1
         xp_assert_close(r, xp.asarray(1.0))
 
-    @skip_xp_backends('jax.numpy',
-                      reasons=["JAX arrays do not support item assignment"])
     def test_ndim(self, xp):
         x = xp.linspace(0, 1, 3)
         y = xp.linspace(0, 2, 8)
@@ -315,8 +313,6 @@ class TestTrapezoid:
         r = trapezoid(q, x=z, axis=2)
         xp_assert_close(r, qz)
 
-    @skip_xp_backends('jax.numpy',
-                      reasons=["JAX arrays do not support item assignment"])
     def test_gh21908(self, xp):
         # extended testing for n-dim arrays
         x = xp.reshape(xp.linspace(0, 29, 30), (3, 10))
