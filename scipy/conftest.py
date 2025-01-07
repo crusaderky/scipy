@@ -173,6 +173,7 @@ if SCIPY_ARRAY_API and isinstance(SCIPY_ARRAY_API, str):
         xp_available_backends.update({'jax.numpy': jax.numpy})
         jax.config.update("jax_enable_x64", True)
         jax.config.update("jax_default_device", jax.devices(SCIPY_DEVICE)[0])
+        jax.config.update("jax_transfer_guard_device_to_host", "disallow")
     except ImportError:
         pass
 
