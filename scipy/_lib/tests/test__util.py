@@ -14,20 +14,18 @@ from scipy.conftest import skip_xp_invalid_arg
 
 from scipy._lib._array_api import (xp_assert_equal, xp_assert_close, is_numpy,
                                    is_array_api_strict)
+from scipy._lib._lazy_testing import lazy_xp_function
 from scipy._lib._util import (_aligned_zeros, check_random_state, MapWrapper,
                               getfullargspec_no_self, FullArgSpec,
                               rng_integers, _validate_int, _rename_parameter,
                               _contains_nan, _rng_html_rewrite, _lazywhere)
 import scipy._lib.array_api_extra as xpx
-from scipy.conftest import lazy_jax_jit
 from scipy import cluster, interpolate, linalg, optimize, sparse, spatial, stats
 
 
-lazy_jax_jit(_contains_nan,
-             static_argnums=(1, ),
-             static_argnames=("nan_policy", "xp_omit_okay", "xp"))
+lazy_xp_function(_contains_nan, static_argnames=("nan_policy", "xp_omit_okay", "xp"))
 # FIXME @jax.jit fails: complex bool mask
-# lazy_jax_jit(_lazywhere, static_argnums=(2, 4), static_argnames=("f", "f2"))
+lazy_xp_function(_lazywhere, jax_jit=False, static_argnames=("f", "f2"))
 
 
 @pytest.mark.slow

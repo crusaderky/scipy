@@ -12,8 +12,9 @@ import pytest
 import hypothesis
 
 from scipy._lib._fpumode import get_fpu_mode
+from scipy._lib._array_api import SCIPY_ARRAY_API, SCIPY_DEVICE, default_xp
+from scipy._lib._lazy_testing import patch_lazy_xp_functions
 from scipy._lib._testutils import FPUModeChangeWarning
-from scipy._lib._array_api import SCIPY_ARRAY_API, SCIPY_DEVICE, default_xp, is_jax
 from scipy._lib import _pep440
 
 try:
@@ -228,7 +229,10 @@ def xp(request, monkeypatch):
     skip_or_xfail_xp_backends(request, "xfail")
 
     if SCIPY_ARRAY_API:
-        _jit_globals(request, monkeypatch)
+        # If request.param==jax.numpy, wrap tested functions in jax.jit
+        patch_lazy_xp_functions(
+            xp=request.param, request=request, monkeypatch=monkeypatch
+        )
 
         # Throughout all calls to assert_almost_equal, assert_array_almost_equal, and
         # xp_assert_* functions, test that the array namespace is xp in both the
@@ -382,79 +386,6 @@ def skip_or_xfail_xp_backends(request: pytest.FixtureRequest,
                 for d in xp.empty(0).devices():
                     if 'cpu' not in d.device_kind:
                         skip_or_xfail(reason=reason)
-
-
-def lazy_jax_jit(func, *, static_argnums=None, static_argnames=None) -> None:
-    """Tag a function, which must be imported in the test module globals,
-    so that when any tests defined in the same module are executed with
-    xp=jax.numpy the function is replaced with a jitted version of itself.
-
-    Example::
-
-      # test_mymodule.py:
-      from scipy.conftest import lazy_jax_jit
-      from scipy.mymodule import myfunc
-
-      lazy_jax_jit(myfunc, static_argnames=["some_setting"])
-
-      def test_myfunc(xp):
-        a = xp.asarray([1, 2])
-        b = myfunc(a, some_setting=True)
-
-    Parameters
-    ----------
-    func : callable
-        Function to be tested, which will be wrapped in jax.jit iff xp=jax.numpy.
-    static_argnums : int | Sequence[int], optional
-        Passed to jax.jit
-    static_argnames : str | Sequence[str], optional
-        Passed to jax.jit
-
-    Notes
-    -----
-    A test function can circumvent the jit by calling the function as an
-    attribute of the original module. You need to sanitize your code to
-    make sure this does not happen.
-
-    Example::
-
-      import mymodule
-      from mymodule import myfunc
-
-      myfunc = lazy_jax_jit(myfunc)
-
-      def test_myfunc(xp):
-        a = xp.asarray([1, 2])
-        b = myfunc(a)  # This is jitted
-        c = mymodule.myfunc(a)  # This is not
-
-    See Also
-    --------
-    jax.jit: https://jax.readthedocs.io/en/latest/_autosummary/jax.jit.html
-    """
-    func._lazy_jax_jit_kwargs = {
-        "static_argnums": static_argnums,
-        "static_argnames": static_argnames,
-    }
-
-
-def _jit_globals(request, monkeypatch):
-    """Helper of `xp` fixture.
-
-    If xp=jax.numpy, search for all functions which have been tagged by `lazy_jax_jit`
-    in the globals of the module that defines the current test and wrap them with
-    `jax.jit`. Unwrap them at the end of the test.
-    """
-    if not is_jax(request.param):
-        return
-
-    import jax
-
-    globals_ = request.module.__dict__
-    for name, func in globals_.items():
-        kwargs = getattr(func, "_lazy_jax_jit_kwargs", None)
-        if kwargs is not None:
-            monkeypatch.setitem(globals_, name, jax.jit(func, **kwargs))
 
 
 # Following the approach of NumPy's conftest.py...

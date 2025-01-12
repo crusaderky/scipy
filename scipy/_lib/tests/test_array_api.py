@@ -7,12 +7,11 @@ from scipy._lib._array_api import (
 )
 from scipy._lib import array_api_extra as xpx
 from scipy._lib._array_api_no_0d import xp_assert_equal as xp_assert_equal_no_0d
-from scipy.conftest import lazy_jax_jit
+from scipy._lib._lazy_testing import lazy_xp_function
 
-lazy_jax_jit(_asarray,
-             static_argnums=(1, 2, 3),
-             static_argnames=("dtype", "order", "copy", "xp", "check_finite", "subok"))
-lazy_jax_jit(xp_copy, static_argnames=("xp", ))
+lazy_xp_function(_asarray, static_argnames=(
+                 "dtype", "order", "copy", "xp", "check_finite", "subok"))
+lazy_xp_function(xp_copy, static_argnames=("xp", ))
 
 
 @pytest.mark.skipif(not _GLOBAL_CONFIG["SCIPY_ARRAY_API"],
