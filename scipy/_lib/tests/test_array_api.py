@@ -7,6 +7,12 @@ from scipy._lib._array_api import (
 )
 from scipy._lib import array_api_extra as xpx
 from scipy._lib._array_api_no_0d import xp_assert_equal as xp_assert_equal_no_0d
+from scipy.conftest import lazy_jax_jit
+
+lazy_jax_jit(_asarray,
+             static_argnums=(1, 2, 3),
+             static_argnames=("dtype", "order", "copy", "xp", "check_finite", "subok"))
+lazy_jax_jit(xp_copy, static_argnames=("xp", ))
 
 
 @pytest.mark.skipif(not _GLOBAL_CONFIG["SCIPY_ARRAY_API"],
@@ -62,6 +68,8 @@ class TestArrayAPI:
     def test_copy(self, xp):
         for _xp in [xp, None]:
             x = xp.asarray([1, 2, 3])
+            # When _xp=None, on JAX this also tests calling
+            # array_namespace() inside @jax.jit
             y = xp_copy(x, xp=_xp)
             # with numpy we'd want to use np.shared_memory, but that's not specified
             # in the array-api
