@@ -67,8 +67,6 @@ class TestArrayAPI:
     def test_copy(self, xp):
         for _xp in [xp, None]:
             x = xp.asarray([1, 2, 3])
-            # When _xp=None, on JAX this also tests calling
-            # array_namespace() inside @jax.jit
             y = xp_copy(x, xp=_xp)
             # with numpy we'd want to use np.shared_memory, but that's not specified
             # in the array-api
