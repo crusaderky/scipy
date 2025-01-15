@@ -135,6 +135,7 @@ import numpy as np
 from . import _hierarchy, _optimal_leaf_ordering
 import scipy.spatial.distance as distance
 from scipy._lib._array_api import array_namespace, _asarray, xp_copy, is_jax
+from scipy._lib import _array_api_extra as xpx
 from scipy._lib._disjoint_set import DisjointSet
 
 
@@ -4157,7 +4158,7 @@ def leaders(Z, T):
     if T.shape[0] != Z.shape[0] + 1:
         raise ValueError('Mismatch: len(T)!=Z.shape[0] + 1.')
 
-    n_clusters = int(xp.unique_values(T).shape[0])
+    n_clusters = int(xpx.nunique(T))
     n_obs = int(Z.shape[0] + 1)
     L = np.zeros(n_clusters, dtype=np.int32)
     M = np.zeros(n_clusters, dtype=np.int32)
