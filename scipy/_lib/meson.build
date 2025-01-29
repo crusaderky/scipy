@@ -234,8 +234,10 @@ py3.install_sources(
 py3.install_sources(
   [
     'array_api_extra/src/array_api_extra/_lib/__init__.py',
+    'array_api_extra/src/array_api_extra/_lib/_at.py',
     'array_api_extra/src/array_api_extra/_lib/_backends.py',
-    'array_api_extra/src/array_api_extra/_lib/_funcs.py',    
+    'array_api_extra/src/array_api_extra/_lib/_funcs.py',
+    'array_api_extra/src/array_api_extra/_lib/_lazy.py',
     'array_api_extra/src/array_api_extra/_lib/_testing.py',
   ],
   subdir: 'scipy/_lib/array_api_extra/_lib',
@@ -245,6 +247,7 @@ py3.install_sources(
   [
     'array_api_extra/src/array_api_extra/__init__.py',
     'array_api_extra/src/array_api_extra/_delegation.py',
+    'array_api_extra/src/array_api_extra/testing.py',
   ],
   subdir: 'scipy/_lib/array_api_extra',
 )
