@@ -4,8 +4,9 @@ from scipy import special
 from scipy.special._support_alternative_backends import (get_array_special_func,
                                                          array_special_func_map)
 from scipy.special import (
-    log_ndtr, ndtr, ndtri, erf, erfc, i0, i0e, i1, i1e, gammaln, # noqa: F401
-    gammainc, gammaincc, logit, expit, entr, rel_entr, xlogy, # noqa: F401
+    airy, airye, itairy,  # noqa: F401
+    log_ndtr, ndtr, ndtri, erf, erfc, i0, i0e, i1, i1e, gammaln,  # noqa: F401
+    gammainc, gammaincc, logit, expit, entr, rel_entr, xlogy,  # noqa: F401
     chdtr, chdtrc, betainc, betaincc, stdtr, stdtrit,  # noqa: F401
 )
 from scipy._lib._array_api_no_0d import xp_assert_close

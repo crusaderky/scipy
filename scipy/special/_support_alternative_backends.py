@@ -11,6 +11,7 @@ from . import _ufuncs
 # These don't really need to be imported, but otherwise IDEs might not realize
 # that these are defined in this file / report an error in __init__.py
 from ._ufuncs import (
+    airy, airye, itairy,  # noqa: F401
     log_ndtr, ndtr, ndtri, erf, erfc, i0, i0e, i1, i1e, gammaln,  # noqa: F401
     gammainc, gammaincc, logit, expit, entr, rel_entr, xlogy,  # noqa: F401
     chdtr, chdtrc, betainc, betaincc, stdtr, stdtrit  # noqa: F401
@@ -211,6 +212,9 @@ def support_alternative_backends(f_name, n_array_args):
 
 
 array_special_func_map = {
+    'airy': 1,
+    'airye': 1,
+    'itairy': 1,
     'log_ndtr': 1,
     'ndtr': 1,
     'ndtri': 1,
