@@ -26,6 +26,7 @@ from numpy import array, arange, float32, power
 import numpy as np
 
 import scipy.stats as stats
+from scipy.stats import tmean, tvar, tstd, tsem, tmin, tmax
 import scipy.stats.mstats as mstats
 import scipy.stats._mstats_basic as mstats_basic
 from scipy.stats._ksstats import kolmogn
@@ -44,7 +45,8 @@ from scipy._lib._array_api import (array_namespace, is_lazy_array, is_numpy,
                                    is_torch, xp_default_dtype, xp_size, SCIPY_ARRAY_API,
                                    make_skip_xp_backends)
 from scipy._lib._array_api_no_0d import xp_assert_close, xp_assert_equal
-from scipy._lib import array_api_extra as xpx
+import scipy._lib.array_api_extra as xpx
+from scipy._lib.array_api_extra.testing import lazy_xp_function
 
 skip_xp_backends = pytest.mark.skip_xp_backends
 boolean_index_skip_reason = 'JAX/Dask arrays do not support boolean assignment.'
@@ -74,10 +76,27 @@ HUGE = array([1e+12,2e+12,3e+12,4e+12,5e+12,6e+12,7e+12,8e+12,9e+12], float)
 TINY = array([1e-12,2e-12,3e-12,4e-12,5e-12,6e-12,7e-12,8e-12,9e-12], float)
 ROUND = array([0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5], float)
 
+lazy_xp_function(tmean, static_argnames=("inclusive", "axis"))
+lazy_xp_function(tvar, static_argnames=("inclusive", "axis", "ddof"))
+lazy_xp_function(tstd, static_argnames=("inclusive", "axis", "ddof"))
+lazy_xp_function(tsem, static_argnames=("inclusive", "axis", "ddof"))
+lazy_xp_function(tmin, static_argnames=("inclusive", "axis"))
+lazy_xp_function(tmax, static_argnames=("inclusive", "axis"))
 
 class TestTrimmedStats:
     # TODO: write these tests to handle missing values properly
     dprec = np.finfo(np.float64).precision
+
+    @staticmethod
+    def lazy_expect(expect, xp):
+        """The output dtype of tmin/tmax is data-dependent: int inputs are cast to
+        float if there are any NaNs. On lazy backends (JAX/Dask), since content tests
+        are impossible, int inputs are always cast to float.
+        """
+        expect = xp.asarray(expect)
+        if is_lazy_array(expect) and xp.isdtype(expect, "integral"):
+            return xp.astype(expect, xp.float64)
+        return expect
 
     @pytest.mark.filterwarnings(
         "ignore:invalid value encountered in divide:RuntimeWarning:dask"
@@ -86,45 +105,44 @@ class TestTrimmedStats:
         default_dtype = xp_default_dtype(xp)
         x = xp.asarray(X, dtype=default_dtype)
 
-        y = stats.tmean(x, (2, 8), (True, True))
+        y = tmean(x, (2, 8), (True, True))
         xp_assert_close(y, xp.asarray(5.0))
 
-        y1 = stats.tmean(x, limits=(2, 8), inclusive=(False, False))
-        y2 = stats.tmean(x, limits=None)
+        y1 = tmean(x, limits=(2, 8), inclusive=(False, False))
+        y2 = tmean(x, limits=None)
         xp_assert_close(y1, y2)
 
         x_2d = xp.reshape(xp.arange(63.), (9, 7))
-        y = stats.tmean(x_2d, axis=None)
+        y = tmean(x_2d, axis=None)
         xp_assert_close(y, xp.mean(x_2d))
 
-        y = stats.tmean(x_2d, axis=0)
+        y = tmean(x_2d, axis=0)
         xp_assert_close(y, xp.mean(x_2d, axis=0))
 
-        y = stats.tmean(x_2d, axis=1)
+        y = tmean(x_2d, axis=1)
         xp_assert_close(y, xp.mean(x_2d, axis=1))
 
-        y = stats.tmean(x_2d, limits=(2, 61), axis=None)
+        y = tmean(x_2d, limits=(2, 61), axis=None)
         xp_assert_close(y, xp.asarray(31.5))
 
-        y = stats.tmean(x_2d, limits=(2, 21), axis=0)
+        y = tmean(x_2d, limits=(2, 21), axis=0)
         y_true = [14, 11.5, 9, 10, 11, 12, 13]
         xp_assert_close(y, xp.asarray(y_true))
 
-        y = stats.tmean(x_2d, limits=(2, 21), inclusive=(True, False), axis=0)
+        y = tmean(x_2d, limits=(2, 21), inclusive=(True, False), axis=0)
         y_true = [10.5, 11.5, 9, 10, 11, 12, 13]
         xp_assert_close(y, xp.asarray(y_true))
 
         x_2d_with_nan = xpx.at(x_2d)[-1, -3:].set(xp.nan, copy=True)
-        y = stats.tmean(x_2d_with_nan, limits=(1, 13), axis=0)
+        y = tmean(x_2d_with_nan, limits=(1, 13), axis=0)
         y_true = [7, 4.5, 5.5, 6.5, xp.nan, xp.nan, xp.nan]
         xp_assert_close(y, xp.asarray(y_true))
 
-        y = stats.tmean(x_2d, limits=(2, 21), axis=1)
+        y = tmean(x_2d, limits=(2, 21), axis=1)
         y_true = [4, 10, 17, 21, xp.nan, xp.nan, xp.nan, xp.nan, xp.nan]
         xp_assert_close(y, xp.asarray(y_true))
 
-        y = stats.tmean(x_2d, limits=(2, 21),
-                        inclusive=(False, True), axis=1)
+        y = tmean(x_2d, limits=(2, 21), inclusive=(False, True), axis=1)
         y_true = [4.5, 10, 17, 21, xp.nan, xp.nan, xp.nan, xp.nan, xp.nan]
         xp_assert_close(y, xp.asarray(y_true))
 
@@ -136,135 +154,139 @@ class TestTrimmedStats:
     def test_tvar(self, xp):
         x = xp.asarray(X.tolist())  # use default dtype of xp
 
-        y = stats.tvar(x, limits=(2, 8), inclusive=(True, True))
+        y = tvar(x, limits=(2, 8), inclusive=(True, True))
         xp_assert_close(y, xp.asarray(4.6666666666666661))
 
-        y = stats.tvar(x, limits=None)
+        y = tvar(x, limits=None)
         xp_assert_close(y, xp.var(x, correction=1))
 
         x_2d = xp.reshape(xp.arange(63.), (9, 7))
-        y = stats.tvar(x_2d, axis=None)
+        y = tvar(x_2d, axis=None)
         xp_assert_close(y, xp.var(x_2d, correction=1))
 
-        y = stats.tvar(x_2d, axis=0)
+        y = tvar(x_2d, axis=0)
         xp_assert_close(y, xp.full((7,), 367.5))
 
-        y = stats.tvar(x_2d, axis=1)
+        y = tvar(x_2d, axis=1)
         xp_assert_close(y, xp.full((9,), 4.66666667))
 
         # Limiting some values along one axis
-        y = stats.tvar(x_2d, limits=(1, 5), axis=1, inclusive=(True, True))
+        y = tvar(x_2d, limits=(1, 5), axis=1, inclusive=(True, True))
         xp_assert_close(y[0], xp.asarray(2.5))
 
         # Limiting all values along one axis
-        y = stats.tvar(x_2d, limits=(0, 6), axis=1, inclusive=(True, True))
+        y = tvar(x_2d, limits=(0, 6), axis=1, inclusive=(True, True))
         xp_assert_close(y[0], xp.asarray(4.666666666666667))
         xp_assert_equal(y[1], xp.asarray(xp.nan))
 
     def test_tstd(self, xp):
         x = xp.asarray(X.tolist())  # use default dtype of xp
 
-        y = stats.tstd(x, (2, 8), (True, True))
+        y = tstd(x, (2, 8), (True, True))
         xp_assert_close(y, xp.asarray(2.1602468994692865))
 
-        y = stats.tstd(x, limits=None)
+        y = tstd(x, limits=None)
         xp_assert_close(y, xp.std(x, correction=1))
 
     @pytest.mark.xfail_xp_backends("array_api_strict",
                                    reason="broadcast int dtype vs. xp.nan")
     def test_tmin(self, xp):
         x = xp.arange(10)
-        xp_assert_equal(stats.tmin(x), xp.asarray(0))
-        xp_assert_equal(stats.tmin(x, lowerlimit=0), xp.asarray(0))
-        xp_assert_equal(stats.tmin(x, lowerlimit=0, inclusive=False), xp.asarray(1))
+        xp_assert_equal(tmin(x), self.lazy_expect(0, xp))
+        xp_assert_equal(tmin(x, lowerlimit=0), self.lazy_expect(0, xp))
+        xp_assert_equal(tmin(x, lowerlimit=0, inclusive=False), 
+                        self.lazy_expect(1, xp))
 
         x = xp.reshape(x, (5, 2))
-        xp_assert_equal(stats.tmin(x, lowerlimit=0, inclusive=False),
-                        xp.asarray([2, 1]))
-        xp_assert_equal(stats.tmin(x, axis=1), xp.asarray([0, 2, 4, 6, 8]))
-        xp_assert_equal(stats.tmin(x, axis=None), xp.asarray(0))
+        xp_assert_equal(tmin(x, lowerlimit=0, inclusive=False),
+                        self.lazy_expect([2, 1], xp))
+        xp_assert_equal(tmin(x, axis=1), self.lazy_expect([0, 2, 4, 6, 8], xp))
+        xp_assert_equal(tmin(x, axis=None), self.lazy_expect(0, xp))
 
         x = xpx.at(xp.arange(10.), 9).set(xp.nan)
-        xp_assert_equal(stats.tmin(x), xp.asarray(xp.nan))
+        xp_assert_equal(tmin(x), xp.asarray(xp.nan))
 
         # check that if a full slice is masked, the output returns a
         # nan instead of a garbage value.
         x = xp.reshape(xp.arange(16), (4, 4))
-        res = stats.tmin(x, lowerlimit=4, axis=1)
+        res = tmin(x, lowerlimit=4, axis=1)
         xp_assert_equal(res, xp.asarray([np.nan, 4, 8, 12]))
 
     @skip_xp_backends(np_only=True,
                       reason="Only NumPy arrays support scalar input/`nan_policy`.")
     def test_tmin_scalar_and_nanpolicy(self, xp):
-        assert_equal(stats.tmin(4), 4)
+        assert_equal(tmin(4), 4)
 
         x = np.arange(10.)
         x[9] = np.nan
         with suppress_warnings() as sup:
             sup.record(RuntimeWarning, "invalid value*")
-            assert_equal(stats.tmin(x, nan_policy='omit'), 0.)
+            assert_equal(tmin(x, nan_policy='omit'), 0.)
             msg = "The input contains nan values"
             with assert_raises(ValueError, match=msg):
-                stats.tmin(x, nan_policy='raise')
+                tmin(x, nan_policy='raise')
             msg = "nan_policy must be one of..."
             with assert_raises(ValueError, match=msg):
-                stats.tmin(x, nan_policy='foobar')
+                tmin(x, nan_policy='foobar')
 
     @pytest.mark.xfail_xp_backends("array_api_strict",
                                    reason="broadcast int dtype vs. xp.nan")
     def test_tmax(self, xp):
         x = xp.arange(10)
-        xp_assert_equal(stats.tmax(x), xp.asarray(9))
-        xp_assert_equal(stats.tmax(x, upperlimit=9), xp.asarray(9))
-        xp_assert_equal(stats.tmax(x, upperlimit=9, inclusive=False), xp.asarray(8))
+        xp_assert_equal(tmax(x), self.lazy_expect(9, xp))
+        xp_assert_equal(tmax(x, upperlimit=9), self.lazy_expect(9, xp))
+        xp_assert_equal(tmax(x, upperlimit=9, inclusive=False), 
+                        self.lazy_expect(8, xp))
 
         x = xp.reshape(x, (5, 2))
-        xp_assert_equal(stats.tmax(x, upperlimit=9, inclusive=False),
-                        xp.asarray([8, 7]))
-        xp_assert_equal(stats.tmax(x, axis=1), xp.asarray([1, 3, 5, 7, 9]))
-        xp_assert_equal(stats.tmax(x, axis=None), xp.asarray(9))
+        xp_assert_equal(tmax(x, upperlimit=9, inclusive=False),
+                        self.lazy_expect([8, 7], xp))
+        xp_assert_equal(tmax(x, axis=1), self.lazy_expect([1, 3, 5, 7, 9], xp))
+        xp_assert_equal(tmax(x, axis=None), self.lazy_expect(9, xp))
 
         x = xpx.at(xp.arange(10.), 9).set(xp.nan)
-        xp_assert_equal(stats.tmax(x), xp.asarray(xp.nan))
+        xp_assert_equal(tmax(x), xp.asarray(xp.nan))
 
         # check that if a full slice is masked, the output returns a
         # nan instead of a garbage value.
         with suppress_warnings() as sup:
             sup.filter(RuntimeWarning, "All-NaN slice encountered")
             x = xp.reshape(xp.arange(16), (4, 4))
-            res = stats.tmax(x, upperlimit=11, axis=1)
+            res = tmax(x, upperlimit=11, axis=1)
             xp_assert_equal(res, xp.asarray([3, 7, 11, np.nan]))
 
     @skip_xp_backends(np_only=True,
                       reason="Only NumPy arrays support scalar input/`nan_policy`.")
     def test_tmax_scalar_and_nanpolicy(self, xp):
-        assert_equal(stats.tmax(4), 4)
+        assert_equal(tmax(4), 4)
 
         x = np.arange(10.)
         x[6] = np.nan
         with suppress_warnings() as sup:
             sup.record(RuntimeWarning, "invalid value*")
-            assert_equal(stats.tmax(x, nan_policy='omit'), 9.)
+            assert_equal(tmax(x, nan_policy='omit'), 9.)
             msg = "The input contains nan values"
             with assert_raises(ValueError, match=msg):
-                stats.tmax(x, nan_policy='raise')
+                tmax(x, nan_policy='raise')
             msg = "nan_policy must be one of..."
             with assert_raises(ValueError, match=msg):
-                stats.tmax(x, nan_policy='foobar')
+                tmax(x, nan_policy='foobar')
 
     def test_tsem(self, xp):
         x = xp.asarray(X.tolist())  # use default dtype of xp
 
-        y = stats.tsem(x, limits=(3, 8), inclusive=(False, True))
+        y = tsem(x, limits=(3, 8), inclusive=(False, True))
         y_ref = xp.asarray([4., 5., 6., 7., 8.])
         xp_assert_close(y, xp.std(y_ref, correction=1) / xp_size(y_ref)**0.5)
-        xp_assert_close(stats.tsem(x, limits=[-1, 10]), stats.tsem(x, limits=None))
+        xp_assert_close(tsem(x, limits=[-1, 10]), tsem(x, limits=None))
 
+    @pytest.mark.skip_xp_backends(eager_only=True, 
+                                  reason="Needs data-dependent output dtype")
     def test_gh_22626(self, xp):
         # Test that `tmin`/`tmax` returns exact result with outrageously large integers
         x = xp.arange(2**62, 2**62+10)
-        xp_assert_equal(stats.tmin(x[None, :]), x)
-        xp_assert_equal(stats.tmax(x[None, :]), x)
+        xp_assert_equal(tmin(x[None, :]), x)
+        xp_assert_equal(tmax(x[None, :]), x)
 
 
 class TestPearsonrWilkinson:
