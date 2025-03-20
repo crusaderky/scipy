@@ -8,13 +8,6 @@ from scipy._lib._array_api import (
 )
 import scipy._lib.array_api_extra as xpx
 from . import _ufuncs
-# These don't really need to be imported, but otherwise IDEs might not realize
-# that these are defined in this file / report an error in __init__.py
-from ._ufuncs import (
-    log_ndtr, ndtr, ndtri, erf, erfc, i0, i0e, i1, i1e, gammaln,  # noqa: F401
-    gammainc, gammaincc, logit, expit, entr, rel_entr, xlogy,  # noqa: F401
-    chdtr, chdtrc, betainc, betaincc, stdtr, stdtrit  # noqa: F401
-)
 
 array_api_compat_prefix = "scipy._lib.array_api_compat"
 
@@ -146,6 +139,20 @@ def _betaincc(xp, spx):
     return __betaincc
 
 
+def _exp2(xp, spx):
+    def __exp2(x):
+        x, = xp_broadcast_promote(x, force_floating=True, xp=xp)
+        return 2**x
+    return __exp2
+
+
+def _exp10(xp, spx):
+    def __exp10(x):
+        x, = xp_broadcast_promote(x, force_floating=True, xp=xp)
+        return 10**x
+    return __exp10
+
+
 def _stdtr(xp, spx):
     betainc = _get_native_func(xp, spx, 'betainc')  # noqa: F811
     if betainc is None:
@@ -170,6 +177,8 @@ def _stdtrit(xp, spx):
     from scipy.optimize.elementwise import bracket_root, find_root
 
     def __stdtrit(df, p):
+        from . import stdtr  # This is just for the benefit of static type checkers
+
         def fun(t, df, p):  return stdtr(df, t) - p
         res_bracket = bracket_root(fun, xp.zeros_like(p), args=(df, p))
         res_root = find_root(fun, res_bracket.bracket, args=(df, p))
@@ -183,6 +192,8 @@ _generic_implementations = {'rel_entr': _rel_entr,
                             'chdtr': _chdtr,
                             'chdtrc': _chdtrc,
                             'betaincc': _betaincc,
+                            'exp2': _exp2,
+                            'exp10': _exp10,
                             'stdtr': _stdtr,
                             'stdtrit': _stdtrit,
                             }
@@ -209,24 +220,35 @@ array_special_func_map = {
     'ndtri': 1,
     'erf': 1,
     'erfc': 1,
+    'erfinv': 1,
     'i0': 1,
     'i0e': 1,
     'i1': 1,
     'i1e': 1,
+    'gamma': 1,
     'gammaln': 1,
     'gammainc': 2,
     'gammaincc': 2,
+    'gammasgn': 1,
     'logit': 1,
+    'exp1': 1,
+    'exp2': 1,
+    'exp10': 1,
+    'expi': 1,
     'expit': 1,
     'entr': 1,
     'rel_entr': 2,
     'xlogy': 2,
+    'xlog1py': 2,
     'chdtr': 2,
     'chdtrc': 2,
     'betainc': 3,
     'betaincc': 3,
+    'betaln': 2,
     'stdtr': 2,
     'stdtrit': 2,
+    'kl_div': 2,
+    'poch': 2,
 }
 
 globals().update(
