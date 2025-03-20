@@ -40,10 +40,6 @@ def _skip_or_tweak_alternative_backends(xp, f_name, dtypes):
     ):
         pytest.skip(f"`{f_name}` does not have an array-agnostic implementation "
                     "and cannot delegate to PyTorch.")
-
-    if is_dask(xp) and f_name == 'rel_entr':
-        pytest.skip("boolean index assignment")
-
     if is_jax(xp) and f_name == "stdtrit":
         pytest.skip(f"`{f_name}` requires scipy.optimize support for immutable arrays")
 
