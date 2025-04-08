@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import betainc
-from scipy._lib._array_api import xp_ravel, array_namespace, xp_promote
+from scipy._lib._array_api import array_namespace, xp_device, xp_ravel, xp_promote
 import scipy._lib.array_api_extra as xpx
 from scipy.stats._axis_nan_policy import _broadcast_arrays, _contains_nan
 from scipy.stats._stats_py import _length_nonmasked
@@ -52,7 +52,7 @@ def _quantile_iv(x, p, method, axis, nan_policy, keepdims):
     if x.shape[axis] == 0:
         shape = list(x.shape)
         shape[axis] = 1
-        x = xp.full(shape, xp.asarray(xp.nan, dtype=dtype))
+        x = xp.full(tuple(shape), xp.nan, dtype=x.dtype, device=xp_device(x))
 
     y = xp.sort(x, axis=axis)
     y, p = _broadcast_arrays((y, p), axis=axis)
@@ -324,7 +324,7 @@ def _quantile_hd(y, p, n, xp):
     p = xp.moveaxis(p, -1, 0)[..., xp.newaxis]
     a = p * (n + 1)
     b = (1 - p) * (n + 1)
-    i = xp.arange(y.shape[-1] + 1, dtype=y.dtype)
+    i = xp.arange(y.shape[-1] + 1, dtype=y.dtype, device=xp_device(y))
     w = betainc(a, b, i / n)
     w = w[..., 1:] - w[..., :-1]
     w = xpx.at(w, xp.isnan(w)).set(0)

@@ -80,6 +80,7 @@ from scipy._lib._array_api import (
     xp_vector_norm,
     xp_promote,
     xp_capabilities,
+    xp_device,
     xp_ravel,
 )
 import scipy._lib.array_api_extra as xpx
@@ -1198,8 +1199,8 @@ def _moment(a, order, axis, *, mean=None, xp=None):
         shape = list(a.shape)
         del shape[axis]
 
-        temp = (xp.ones(shape, dtype=dtype) if order == 0
-                else xp.zeros(shape, dtype=dtype))
+        full = xp.ones if order == 0 else xp.zeros
+        temp = full(shape, dtype=dtype, device=xp_device(a))[()]
         return temp[()] if temp.ndim == 0 else temp
 
     # Exponentiation by squares: form exponent sequence
