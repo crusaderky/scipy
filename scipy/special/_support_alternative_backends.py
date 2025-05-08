@@ -83,12 +83,6 @@ class _FuncInfo:
         if f is not None:
             return f
 
-        # If generic Array API implementation is available, use that
-        if self.generic_impl is not None:
-            f = self.generic_impl(xp, spx)
-            if f is not None:
-                return f
-
         if is_marray(xp):
             # Unwrap the array, apply the function on the wrapped namespace,
             # and then re-wrap it.
@@ -118,6 +112,12 @@ class _FuncInfo:
                 return xp.map_blocks(functools.partial(_f, **kwargs), *args)
 
             return f
+
+        # If generic Array API implementation is available, use that
+        if self.generic_impl is not None:
+            f = self.generic_impl(xp, spx)
+            if f is not None:
+                return f
 
         # As a final resort, use the NumPy/SciPy implementation
         _f = self.func

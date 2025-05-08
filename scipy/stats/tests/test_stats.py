@@ -4236,12 +4236,11 @@ class TestPowerDivergence:
         xp_assert_close(p, xp.asarray(expected_p, dtype=dtype))
 
     @pytest.mark.parametrize('case', power_div_1d_cases)
-    @pytest.mark.parametrize('lambda_stat',
+    @pytest.mark.parametrize('lambda_,attr',
         [(None, 'chi2'), ('pearson', 'chi2'), (1, 'chi2'),
          ('log-likelihood', 'log'), ('mod-log-likelihood', 'mod_log'),
          ('cressie-read', 'cr'), (2/3, 'cr')])
-    def test_basic(self, case, lambda_stat, xp):
-        lambda_, attr = lambda_stat
+    def test_basic(self, case, lambda_, attr, xp):
         expected_stat = getattr(case, attr)
         self.check_power_divergence(case.f_obs, case.f_exp, case.ddof, case.axis,
                                     lambda_, expected_stat, xp)

@@ -73,7 +73,6 @@ def _skip_or_tweak_alternative_backends(xp, f_name, dtypes):
     return positive_only, dtypes_np_ref
 
 
-@pytest.mark.filterwarnings("ignore:invalid value encountered:RuntimeWarning:dask")
 @pytest.mark.parametrize('shapes', [[(0,)]*4, [tuple()]*4, [(10,)]*4,
                                     [(10,), (11, 1), (12, 1, 1), (13, 1, 1, 1)]])
 @pytest.mark.parametrize('dtype', ['float32', 'float64', 'int64'])
@@ -117,7 +116,6 @@ def test_support_alternative_backends(xp, func, nfo, dtype, shapes):
 @pytest.mark.parametrize(
     'func, nfo',
     [make_xp_pytest_param(i.wrapper, i) for i in _special_funcs if i.n_args >= 2])
-@pytest.mark.filterwarnings("ignore:invalid value encountered:RuntimeWarning:dask")
 def test_support_alternative_backends_mismatched_dtypes(xp, func, nfo):
     """Test mix-n-match of int and float arguments"""
     dtypes = ['int64', 'float32', 'float64'][:nfo.n_args]
@@ -153,10 +151,8 @@ def test_support_alternative_backends_mismatched_dtypes(xp, func, nfo):
 @pytest.mark.fail_slow(5)
 @pytest.mark.parametrize(
     'func,nfo', [make_xp_pytest_param(nfo.wrapper, nfo) for nfo in _special_funcs])
-@pytest.mark.filterwarnings("ignore:invalid value encountered:RuntimeWarning:dask")
-@pytest.mark.filterwarnings("ignore:divide by zero encountered:RuntimeWarning:dask")
-@pytest.mark.filterwarnings("ignore:overflow encountered:RuntimeWarning:dask")
 @pytest.mark.filterwarnings(
+    # Triggered by generic implementations 
     "ignore:overflow encountered:RuntimeWarning:array_api_strict"
 )
 def test_support_alternative_backends_hypothesis(xp, func, nfo, data):
