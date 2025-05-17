@@ -12,8 +12,6 @@ import random
 import importlib
 import json
 
-from scipy._lib._array_api import SCIPY_ARRAY_API
-
 
 class Benchmark:
     """
@@ -43,6 +41,8 @@ class XPBenchmark(Benchmark):
     params = backends_devices.copy()
 
     def __init__(self):
+        from scipy._lib._array_api import SCIPY_ARRAY_API
+
         all_backends = {backend for backend, _ in self.backends_devices}
 
         if SCIPY_ARRAY_API is False:
