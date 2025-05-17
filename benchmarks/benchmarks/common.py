@@ -9,6 +9,10 @@ import textwrap
 import subprocess
 import itertools
 import random
+import importlib
+import json
+
+from scipy._lib._array_api import SCIPY_ARRAY_API
 
 
 class Benchmark:
@@ -16,6 +20,64 @@ class Benchmark:
     Base class with sensible options
     """
     pass
+
+
+class XPBenchmark(Benchmark):
+    """
+    Base class for benchmarks that are run on multiple Array API backends
+    and devices
+    """
+
+    backends_devices = [
+        ("numpy", "cpu"),
+        ("array_api_strict", "cpu"),
+        ("cupy", "cuda"),
+        ("torch", "cpu"),
+        ("torch", "cuda"),
+        ("dask.array", "cpu"),
+        ("jax.numpy", "cpu"),
+        ("jax.numpy", "cuda"),
+    ]
+    # subclasses can override these
+    param_names = ["backend", "device"]
+    params = backends_devices.copy()
+
+    def __init__(self):
+        all_backends = {backend for backend, _ in self.backends_devices}
+
+        if SCIPY_ARRAY_API is False:
+            self.available_backends = {"numpy"}
+        elif (
+            isinstance(SCIPY_ARRAY_API, str)
+            and SCIPY_ARRAY_API.lower() not in ("1", "true", "all")
+        ):
+            SCIPY_ARRAY_API_ = json.loads(SCIPY_ARRAY_API)
+            if SCIPY_ARRAY_API_ != ['all']:
+                # only select a subset of backend by filtering out the list
+                if SCIPY_ARRAY_API_ - all_backends:
+                    msg = ("SCIPY_ARRAY_API must be in "
+                        f"{list(all_backends)}; got {SCIPY_ARRAY_API_}")
+                    raise ValueError(msg)
+                self.available_backends = set(SCIPY_ARRAY_API_)
+        else:
+            # by default, use all available backends
+            self.available_backends = all_backends
+
+    def setup(self, backend, device):
+        if backend not in self.available_backends:
+            raise NotImplementedError(backend)
+
+        self.xp = importlib.import_module(backend)
+        if backend == "torch":
+            import torch
+
+            torch.set_default_dtype(torch.float64)
+            torch.set_default_device(device)
+        elif backend == "jax.numpy":
+            import jax
+
+            jax.config.update("jax_enable_x64", True)
+            jax.config.update("jax_default_device", jax.devices(device)[0])
 
 
 def is_xslow():
