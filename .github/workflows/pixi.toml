@@ -19,7 +19,7 @@ pip = "*"
 blas-devel = "*"
 numpy = ">=2.0.0"
 pybind11 = ">=2.13.1"
-pythran = ">=0.15.0"
+pythran = ">=0.18.0"
 rich-click = "*"
 pydevtool = "*"
 # Add test dependencies to default list of dependencies so they show up in every

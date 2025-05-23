@@ -484,13 +484,8 @@ jobs:
 
     - name: Install Python dependencies
       run: |
-        pip install numpy ninja meson-python pybind11 spin pytest pytest-xdist threadpoolctl pooch hypothesis
+        pip install numpy ninja meson-python pybind11 pythran spin pytest pytest-xdist threadpoolctl pooch hypothesis
         pip install -r requirements/openblas.txt
-
-    - name: Install Pythran master
-      run: |
-        # 0.17.0 doesn't support free-threading, update once the next release is out
-        python -m pip install git+https://github.com/serge-sans-paille/pythran.git
 
     - name: Install pytest-run-parallel
       if: ${{ matrix.parallel == '1'}}
