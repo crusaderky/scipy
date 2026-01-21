@@ -111,6 +111,13 @@ solve-group = "cuda12"
 features = ["run-deps", "test-deps", "bench-common", "cuda12", "py-cuda", "mkl", "torch-cuda", "torch-cuda-tasks"]
 solve-group = "cuda12"
 
+[environments.array-api-cuda]
+# tasks: test-cuda, bench-cuda 
+# XXX: elsewhere it's stated that cupy needs cuda13,
+# but it seems to work fine here with cuda12?
+features = ["run-deps", "test-deps", "test-cuda", "bench-common", "cuda12", "py-cuda", "mkl", "array_api_strict", "dask", "cupy", "jax-cuda", "torch-cuda"]
+solve-group = "cuda12"
+
 [environments.build-accelerate-lp64]
 # tasks: build-accelerate-lp64
 features = ["build-deps", "accelerate", "build-accelerate-lp64"]
@@ -432,6 +439,26 @@ description = "Test with all CPU array backends"
 cmd = "spin bench --no-build --build-dir=build-cpu -b all"
 depends-on = "build-cpu"
 description = "Benchmark with all CPU array backends"
+
+[feature.test-cuda]
+platforms = ["linux-64", "osx-arm64", "win-64"]
+
+[feature.test-cuda.tasks.test-cuda]
+# XXX: `SCIPY_DEVICE=cuda spin test -b all` would run all CPU-only backends,
+# plus cupy and the CUDA variant of torch and jax, which is confusing.
+cmd = "spin test --no-build --build-dir=build-cuda -b torch -b cupy -b jax.numpy -m 'array_api_backends and not slow'"
+env.SCIPY_DEVICE = "cuda"
+depends-on = "build-cuda"
+description = "Test with all CUDA array backends"
+
+[feature.test-cuda.tasks.bench-cuda]
+# Note: unlike test-cuda, this tests all backends side by side, not just the CUDA ones.
+# This is generally desirable as it is useful to have everything side by side.
+# Notably, unlike `SCIPY_DEVICE=cuda spin test -b all`, it also tests
+# jax/torch cpu vs. jax/torch cuda side by side.
+cmd = "spin bench --no-build --build-dir=build-cuda -b all"
+depends-on = "build-cuda"
+description = "Benchmark with all CPU and CUDA array backends"
 
 # XXX: the purpose of this feature is to enforce the same minor Python version
 # over both the cuda12 and cuda13 solve groups
